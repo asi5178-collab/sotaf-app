@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>SOTAF App — יצירת מסמכים A–G</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  textarea { width: 100%; min-height: 260px; font-family: ui-monospace, monospace; direction: ltr; text-align: left; box-sizing: border-box; }
+  .row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0.75rem 0; }
+  button { padding: 0.5rem 1.2rem; font-size: 1rem; cursor: pointer; }
+  .error { color: #b00020; font-weight: bold; }
+  .issues { background: rgba(255, 200, 0, 0.15); border: 1px solid #cc9900; padding: 0.75rem 1rem; border-radius: 6px; }
+  .issues.ok { background: rgba(0, 160, 0, 0.12); border-color: #2a8; }
+  details { border: 1px solid #8883; border-radius: 6px; margin: 0.5rem 0; padding: 0.4rem 0.8rem; }
+  summary { cursor: pointer; font-weight: bold; }
+  pre { direction: ltr; text-align: left; white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+  <h1>SOTAF App — יצירת מסמכים A–G ובדיקת עקביות</h1>
+  <p>הדביקו/העלו קובץ metadata בפורמט JSON וקבלו את המסמכים המלאים + דוח עקביות.</p>
+
+  <form method="post" enctype="multipart/form-data">
+    <textarea name="metadata_text" spellcheck="false">{{ metadata_text }}</textarea>
+    <div class="row">
+      <label>או העלאת קובץ JSON: <input type="file" name="metadata_file" accept=".json"></label>
+      <button type="submit">צור מסמכים ובדוק</button>
+    </div>
+  </form>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  {% if issues is not none %}
+    <h2>דוח עקביות</h2>
+    {% if issues %}
+      <div class="issues">
+        <strong>נמצאו {{ issues|length }} בעיה/ות:</strong>
+        <ul>
+          {% for issue in issues %}<li>{{ issue }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% else %}
+      <div class="issues ok">לא נמצאו אי-התאמות.</div>
+    {% endif %}
+  {% endif %}
+
+  {% if documents %}
+    <h2>מסמכים שנוצרו</h2>
+    {% for d in documents %}
+      <details {% if loop.first %}open{% endif %}>
+        <summary>מסמך {{ d.doc }}</summary>
+        <pre>{{ d.rendered }}</pre>
+      </details>
+    {% endfor %}
+  {% endif %}
+</body>
+</html>
