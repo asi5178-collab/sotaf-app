@@ -8,6 +8,7 @@ import json
 import os
 import secrets
 import uuid
+from urllib.parse import quote
 
 from flask import Flask, Response, redirect, render_template, request, session, url_for
 
@@ -224,11 +225,15 @@ def export_pdf():
         return Response(f"PDF generation is unavailable on this server: {exc}", status=500)
 
     pdf_bytes = HTML(string=html, base_url=os.path.dirname(__file__) + os.sep).write_pdf()
-    filename = f"{metadata.get('project_name', 'SOTAF')}.pdf"
+
+    # HTTP headers must be Latin-1; a Hebrew project name needs RFC 5987 encoding
+    # (filename*=UTF-8''...), with a plain ASCII filename as a compatibility fallback.
+    quoted_name = quote(f"{metadata.get('project_name', 'SOTAF')}.pdf")
+    disposition = f"attachment; filename=\"SOTAF.pdf\"; filename*=UTF-8''{quoted_name}"
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": disposition},
     )
 
 
