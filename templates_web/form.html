@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}SOTAF App — פרטי הפרויקט{% endblock %}
+{% block content %}
+  <h1>SOTAF App — הזנת פרטי המערכת</h1>
+  <p>מלאו את הפרטים הבאים. בסיום, המערכת תיצור עבורכם את מסמכי ה-SOTAF (A–G) ותבדוק עקביות.</p>
+
+  <form method="post">
+    <fieldset>
+      <legend>פרטי כלליים</legend>
+      {% for key, label, doc in fields if not doc %}
+        <label for="{{ key }}">{{ label }}</label>
+        <input type="text" id="{{ key }}" name="{{ key }}" value="{{ values.get(key, '') }}">
+      {% endfor %}
+    </fieldset>
+
+    {% for doc_letter in ['A', 'B', 'C', 'D', 'E', 'F', 'G'] %}
+      <fieldset>
+        <legend>מסמך {{ doc_letter }}</legend>
+        {% for key, label, doc in fields if doc == doc_letter %}
+          <label for="{{ key }}">{{ label }}</label>
+          <textarea id="{{ key }}" name="{{ key }}">{{ values.get(key, '') }}</textarea>
+        {% endfor %}
+      </fieldset>
+    {% endfor %}
+
+    <div class="row">
+      <button type="submit" class="primary">צור מסמכים ובדוק עקביות</button>
+    </div>
+  </form>
+{% endblock %}

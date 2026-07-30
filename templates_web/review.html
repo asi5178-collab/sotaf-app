@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}SOTAF App — סקירה{% endblock %}
+{% block content %}
+  <h1>SOTAF App — המסמכים שנוצרו</h1>
+  <div class="row">
+    <a class="button" href="{{ url_for('index') }}">&rarr; ערוך פרטים</a>
+  </div>
+
+  <h2>דוח עקביות (בין מסמכי ה-SOTAF עצמם)</h2>
+  {% if issues %}
+    <div class="issues">
+      <strong>נמצאו {{ issues|length }} בעיה/ות:</strong>
+      <ul>{% for issue in issues %}<li>{{ issue }}</li>{% endfor %}</ul>
+    </div>
+  {% else %}
+    <div class="issues ok">לא נמצאו אי-התאמות בין המסמכים.</div>
+  {% endif %}
+
+  <h2>מסמכים</h2>
+  {% for d in documents %}
+    <details>
+      <summary>מסמך {{ d.doc }}</summary>
+      <pre>{{ d.rendered }}</pre>
+    </details>
+  {% endfor %}
+
+  <h2>בדיקת התאמה מול קבצי פרויקט (AI)</h2>
+  <p>העלו קבצי PDF / Word של הפרויקט (מצגות, דוחות, מסמכי דרישות) — Claude ישווה את תוכנם למסמכי ה-SOTAF, יאתר אי-התאמות, וימליץ על תיקונים.</p>
+
+  <form method="post" action="{{ url_for('analyze_uploads') }}" enctype="multipart/form-data">
+    <div class="row">
+      <input type="file" name="project_files" accept=".pdf,.docx" multiple required>
+      <button type="submit" class="primary">נתח מול הקבצים</button>
+    </div>
+  </form>
+
+  {% if analyze_error %}
+    <p class="error">{{ analyze_error }}</p>
+  {% endif %}
+
+  {% if findings is not none %}
+    <h2>ממצאים</h2>
+    {% if findings %}
+      {% for f in findings %}
+        <div class="finding">
+          <span class="doc-badge">מסמך {{ f.doc }}</span>
+          <strong>{{ f.issue }}</strong>
+          <p><em>מקור:</em> {{ f.source }}</p>
+          <p><em>המלצה:</em> {{ f.recommendation }}</p>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="issues ok">לא נמצאו אי-התאמות בין הקבצים שהועלו לבין מסמכי ה-SOTAF.</div>
+    {% endif %}
+  {% endif %}
+{% endblock %}
