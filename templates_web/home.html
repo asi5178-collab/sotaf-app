@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}SOTAF Studio — תיאור המערכת{% endblock %}
+{% block content %}
+  <section class="hero">
+    <span class="eyebrow">SOTAF — Socio-Technological Architecture Framework</span>
+    <h1>תארו את המערכת שלכם, ותנו ל-SOTAF Studio לבנות עבורכם את כל ערכת המסמכים</h1>
+    <p class="lead">
+      כלי אינטראקטיבי להכנת מסמכי SOTAF (0, A–H) לפי המתודולוגיה שנלמדת בקורס. תארו את האתגר המערכתי שלכם,
+      השראו מפרויקטים קודמים, ומלאו כל מסמך בממשק מובנה — עם ייצוא ל-PDF מעוצב ובדיקת עקביות אוטומטית בין המסמכים.
+    </p>
+  </section>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h2 style="font-size:1.15rem">התחלת פרויקט חדש</h2>
+      <form method="post" action="{{ url_for('create_project') }}">
+        <label for="project_name">שם הפרויקט / האתגר המערכתי</label>
+        <input type="text" id="project_name" name="project_name" placeholder="למשל: הרחבת נסיעות שיתופיות בקמפוס" required>
+
+        <label for="author">שם/שמות הצוות</label>
+        <input type="text" id="author" name="author" placeholder="שם מלא">
+
+        <label for="description">תארו בכמה משפטים את האתגר או המערכת</label>
+        <textarea id="description" name="description" placeholder="מהו האתגר המערכתי? מי המשתמשים? מה הבעיה שרוצים לפתור?"></textarea>
+        <p class="field-hint">אפשר להרחיב על כל היבט בהמשך, בתוך כל אחד ממסמכי ה-SOTAF.</p>
+
+        <div class="row" style="margin-top:1.4rem">
+          <button type="submit" class="btn btn-primary">התחל לבנות את מסמכי הפרויקט</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:1.15rem">לא בטוחים מאיפה להתחיל?</h2>
+      <p>עיינו בפרויקטים אמיתיים מהקורס — מגוון אתגרי ניידות קמפוסית — לראות איך מסמכי SOTAF שלמים נראים בפועל, ואילו מסמכים כל פרויקט כלל.</p>
+      <a class="btn btn-ghost" href="{{ url_for('library') }}">לספריית הפרויקטים &larr;</a>
+    </div>
+  </div>
+
+  <div class="section-title"><h2 style="font-size:1.15rem">מה מקבלים</h2></div>
+  <div class="grid grid-3">
+    <div class="card">
+      <h3 style="font-size:1rem">9 מסמכי SOTAF מלאים</h3>
+      <p>ממסמך הגדרת האתגר ועד מסמך בדיקת הרציפות (H) — לפי המבנה וה-סעיפים המדויקים מהקורס.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size:1rem">בדיקת עקביות ב-AI</h3>
+      <p>מעלים קבצי פרויקט (PDF/Word), ו-Claude מאתר אי-התאמות בין המסמכים — בדיוק כמו מסמך H הרשמי.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size:1rem">ייצוא PDF מעוצב</h3>
+      <p>כל מסמכי הפרויקט, מעוצבים ומוכנים להגשה, בלחיצת כפתור אחת.</p>
+    </div>
+  </div>
+{% endblock %}

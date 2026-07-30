@@ -1,0 +1,63 @@
+@font-face {
+  font-family: "Heebo";
+  src: url("fonts/Heebo.ttf");
+  font-weight: 100 900;
+}
+@font-face {
+  font-family: "Frank Ruhl Libre";
+  src: url("fonts/FrankRuhlLibre.ttf");
+  font-weight: 300 900;
+}
+
+@page {
+  size: A4;
+  margin: 2.2cm 1.8cm 2.4cm;
+  @bottom-center {
+    content: counter(page);
+    font-family: "Heebo";
+    font-size: 9pt;
+    color: #85806f;
+  }
+}
+
+* { box-sizing: border-box; }
+html { direction: rtl; }
+body {
+  font-family: "Heebo", sans-serif;
+  color: #1c1a17;
+  font-size: 10.5pt;
+  line-height: 1.55;
+}
+h1, h2, h3 { font-family: "Frank Ruhl Libre", serif; color: #172236; margin: 0 0 0.35em; }
+
+.cover {
+  height: 24.5cm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  break-after: page;
+}
+.cover .eyebrow {
+  font-size: 10pt; letter-spacing: 0.08em; text-transform: uppercase; color: #c1622d; font-weight: 700; margin-bottom: 1.2rem;
+}
+.cover h1 { font-size: 30pt; margin-bottom: 0.4em; max-width: 18cm; }
+.cover .meta { color: #55524a; font-size: 11pt; margin-top: 1.5rem; }
+.cover .desc { max-width: 14cm; color: #55524a; margin-top: 1rem; font-size: 11pt; }
+
+.doc { break-before: page; }
+.doc-header { border-bottom: 3px solid #c1622d; padding-bottom: 0.5rem; margin-bottom: 1.2rem; }
+.doc-header .letter { font-family: "Frank Ruhl Libre"; font-size: 13pt; color: #c1622d; font-weight: 800; }
+.doc-header h2 { font-size: 18pt; margin: 0.15em 0 0; }
+.doc-header .subtitle { color: #85806f; font-size: 10pt; }
+
+.section { margin: 1.1rem 0; break-inside: avoid; }
+.section h3 { font-size: 12pt; border-right: 4px solid #c1622d; padding-right: 0.5rem; }
+.section p { white-space: pre-wrap; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 0.4rem; font-size: 9pt; }
+th, td { border: 1px solid #e6ddcc; padding: 0.35rem 0.5rem; text-align: right; vertical-align: top; }
+th { background: #f2ede4; font-weight: 700; }
+
+.empty-doc { color: #85806f; font-style: italic; }

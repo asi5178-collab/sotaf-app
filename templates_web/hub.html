@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ project_name }} — SOTAF Studio{% endblock %}
+{% block content %}
+  <section class="hero" style="padding-top:2.2rem">
+    <span class="eyebrow">הפרויקט שלי</span>
+    <h1>{{ project_name }}</h1>
+    {% if description %}<p class="lead">{{ description }}</p>{% endif %}
+    <div class="row">
+      <a class="btn btn-primary" href="{{ url_for('export_pdf') }}">ייצוא PDF מלא</a>
+      <a class="btn btn-ghost" href="{{ url_for('review') }}">בדיקת עקביות (AI) — מסמך H</a>
+      <a class="btn btn-ghost" href="{{ url_for('home') }}">פרויקט חדש</a>
+    </div>
+  </section>
+
+  <div class="section-title"><h2 style="font-size:1.15rem">מסמכי SOTAF</h2></div>
+  <div class="grid grid-3">
+    {% for d in docs %}
+      <a class="card card-hover doc-card" href="{{ url_for('doc_editor', doc=d.letter) }}">
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <span class="doc-letter">{{ d.letter }}</span>
+          <span class="progress-label">{{ d.filled }}/{{ d.total }}</span>
+        </div>
+        <div>
+          <h3>{{ d.title }}</h3>
+          <p class="doc-sub">{{ d.subtitle }}</p>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:{{ d.pct }}%"></div></div>
+      </a>
+    {% endfor %}
+  </div>
+{% endblock %}

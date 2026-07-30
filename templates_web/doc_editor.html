@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}מסמך {{ doc }} — {{ title }} — SOTAF Studio{% endblock %}
+{% block content %}
+  <section class="hero" style="padding-top:2.2rem; padding-bottom:1rem">
+    <span class="eyebrow">מסמך {{ doc }}</span>
+    <h1>{{ title }}</h1>
+    <p class="lead">{{ subtitle }}</p>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('hub') }}">&rarr; חזרה לפרויקט</a>
+  </section>
+
+  <form method="post" data-serialize-dyn>
+    {% for block in blocks %}
+      <div class="doc-section">
+        <h3>{{ block.label }}</h3>
+        {% if block.type == "text" %}
+          <textarea name="{{ block.name }}" rows="4">{{ block.value }}</textarea>
+        {% else %}
+          <div class="dyn-rows-wrap" data-dyn="{{ block.config_json }}" data-hidden-input="{{ block.hidden_id }}">
+            <div class="dyn-rows"></div>
+            <button type="button" class="btn btn-ghost btn-sm dyn-add-btn">+ הוספת שורה</button>
+          </div>
+          <input type="hidden" id="{{ block.hidden_id }}" name="{{ block.name }}">
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <div class="row" style="margin:1.6rem 0 3rem">
+      <button type="submit" class="btn btn-primary">שמירה וחזרה לפרויקט</button>
+    </div>
+  </form>
+{% endblock %}

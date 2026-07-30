@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Use Claude to compare uploaded project files against generated SOTAF documents
-and recommend corrections. Findings come back as structured tool input, not
-free-text parsing.
+"""Use Claude to compare uploaded project files against the filled-in SOTAF
+documents and produce findings shaped like the course's real Doc H table
+(מסמך בדיקת רציפות מסמכים): document/section, the SOTAF info, the conflicting
+info, and the required fix.
 """
 import anthropic
 
@@ -11,7 +12,7 @@ REPORT_TOOL = {
     "name": "report_findings",
     "description": (
         "Report inconsistencies found between the uploaded project files and the "
-        "SOTAF documents, with a recommended correction for each."
+        "SOTAF documents, shaped like the course's Doc H (מסמך בדיקת רציפות מסמכים) table."
     ),
     "input_schema": {
         "type": "object",
@@ -23,23 +24,27 @@ REPORT_TOOL = {
                     "properties": {
                         "doc": {
                             "type": "string",
-                            "enum": ["A", "B", "C", "D", "E", "F", "G"],
+                            "enum": ["0", "A", "B", "C1", "D", "E", "F", "G", "H"],
                             "description": "Which SOTAF document this finding applies to.",
                         },
-                        "issue": {
+                        "section": {
                             "type": "string",
-                            "description": "The inconsistency, in Hebrew: what the project files say vs. what the SOTAF document says.",
+                            "description": "Which section within that document, in Hebrew (e.g. 'בעלי עניין', 'מיפוי שירותי ניידות').",
                         },
-                        "source": {
+                        "sotaf_info": {
                             "type": "string",
-                            "description": "Which uploaded file (and where in it) supports this finding.",
+                            "description": "The information as currently stated in the SOTAF document, in Hebrew.",
+                        },
+                        "conflicting_info": {
+                            "type": "string",
+                            "description": "The conflicting or missing information found in the uploaded project files, with the source filename, in Hebrew.",
                         },
                         "recommendation": {
                             "type": "string",
-                            "description": "A concrete recommended edit to the SOTAF document, in Hebrew.",
+                            "description": "A concrete recommended fix to the SOTAF document, in Hebrew.",
                         },
                     },
-                    "required": ["doc", "issue", "source", "recommendation"],
+                    "required": ["doc", "section", "sotaf_info", "conflicting_info", "recommendation"],
                 },
             }
         },
@@ -48,22 +53,24 @@ REPORT_TOOL = {
 }
 
 SYSTEM_PROMPT = """\
-אתה עוזר בבדיקת עקביות של מסמכי SOTAF (A-G) המתארים מערכת, מול קבצי פרויקט \
-שהמשתמש העלה (מצגות, דוחות, מסמכי דרישות וכו').
+אתה עוזר בהכנת מסמך H (מסמך בדיקת רציפות מסמכים) בשיטת SOTAF - מסמך שמטרתו "איתור \
+נקודות אי-התאמה בין מסמכי A-G" של פרויקט הנדסת מערכות.
 
-המשימה שלך: למצוא אי-התאמות עובדתיות בין תוכן קבצי הפרויקט לבין מסמכי ה-SOTAF - \
-מידע שסותר את מה שכתוב במסמך, מידע חשוב שמופיע בקבצי הפרויקט אך חסר במסמך, או \
-מידע במסמך שנראה מיושן/שגוי לאור קבצי הפרויקט.
+תקבל את תוכן מסמכי ה-SOTAF שהמשתמש מילא (0, A, B, C1, D, E, F, G) וקבצי פרויקט \
+שהועלו (מצגות, דוחות, מסמכי דרישות). המשימה שלך: למצוא אי-התאמות עובדתיות בין \
+תוכן קבצי הפרויקט לבין מסמכי ה-SOTAF - מידע שסותר את מה שכתוב במסמך, מידע חשוב \
+שמופיע בקבצי הפרויקט אך חסר במסמך, או מידע במסמך שנראה מיושן/שגוי לאור קבצי הפרויקט.
 
-עבור כל אי-התאמות שתמצא, קרא ל-report_findings עם רשימת הממצאים. אם לא נמצאו \
-אי-התאמות, קרא לה עם רשימה ריקה. אל תדווח על ניסוחים שונים בלבד ללא הבדל עובדתי \
-בפועל - רק על אי-התאמות מהותיות."""
+עבור כל אי-התאמה, קרא ל-report_findings עם שורה בפורמט הזהה לטבלת H2 הרשמית: \
+מסמך + סעיף, המידע כפי שמופיע במסמך ה-SOTAF, המידע הסותר/חסר מהקובץ שהועלה (עם שם \
+הקובץ), והתיקון הנדרש. אם לא נמצאו אי-התאמות, קרא לה עם רשימה ריקה. אל תדווח על \
+ניסוחים שונים בלבד ללא הבדל עובדתי בפועל - רק על אי-התאמות מהותיות."""
 
 
 def review(sotaf_documents: list[dict], uploaded_files: list[dict]) -> list[dict]:
     """sotaf_documents: [{'doc': 'A', 'rendered': '...'}, ...]
     uploaded_files: [{'filename': '...', 'text': '...'}, ...]
-    Returns a list of finding dicts (possibly empty).
+    Returns a list of finding dicts shaped like Doc H rows.
     """
     client = anthropic.Anthropic()
 
@@ -77,7 +84,7 @@ def review(sotaf_documents: list[dict], uploaded_files: list[dict]) -> list[dict
     user_message = (
         f"מסמכי SOTAF נוכחיים:\n\n{docs_text}\n\n"
         f"קבצי הפרויקט שהועלו:\n\n{files_text}\n\n"
-        "מצא אי-התאמות ודווח באמצעות report_findings."
+        "מצא אי-התאמות ודווח באמצעות report_findings, בפורמט טבלת H2."
     )
 
     response = client.messages.create(

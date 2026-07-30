@@ -1,45 +1,53 @@
-# SOTAF App (templates A–G)
+# SOTAF Studio
 
-כלי קטן ליצירת מסמכי SOTAF A–G מבוססי תבניות Markdown ובדיקת אי‑התאמות בסיסית בין המסמכים.
+אפליקציית web אינטראקטיבית להכנת ערכת מסמכי SOTAF מלאה (0, A, B, C1, D, E, F, G, H), לפי
+המתודולוגיה והתבניות הרשמיות של קורס "מידול מערכות" (SOTAF — Socio-Technological Architecture
+Framework, אוניברסיטת אריאל). מבנה המסמכים, שמות הסעיפים והטבלאות המובנות (בעלי עניין, שירותי
+ניידות, תרחישים, ממשקים וכו') מבוססים על התבניות והמסמכים האמיתיים של הקורס — לא הומצאו.
 
-## שימוש כ-CLI
+## מה יש באפליקציה
 
-1. עדכן `sample_metadata.json` עם שדות הפרויקט.
-2. הרץ:
+1. **תיאור המערכת** — עמוד פתיחה ליצירת פרויקט חדש: שם, צוות, תיאור קצר.
+2. **ספריית פרויקטים** — 6 דוגמאות אמיתיות מהקורס (MaaS קמפוסי, GreenShare, Backbone, מיקרומוביליטי, פינוי חירום, מוקד ניהול ניידות) להשראה.
+3. **לוח הפרויקט (Hub)** — כרטיס לכל אחד מ-9 מסמכי ה-SOTAF, עם מד התקדמות.
+4. **עורך מסמך** — לכל מסמך: שדות טקסט חופשי + טבלאות דינמיות (הוספה/הסרה של שורות) התואמות בדיוק את הטבלאות הרשמיות (A1-A6, C1-1..C1-4, D1-D5, E1-E5, F1-F5 וכו'), עם נתוני ברירת מחדל אמיתיים מהתבניות (8 קבוצות בעלי עניין, 10 שירותי ניידות, 5 תרחישים סטנדרטיים).
+5. **בדיקת עקביות (מסמך H)** — העלאת קבצי פרויקט (PDF/Word); Claude (`claude-opus-5`) משווה את תוכנם למסמכי ה-SOTAF ומחזיר ממצאים בפורמט הטבלה הרשמית של מסמך H (מסמך/סעיף, מידע במסמך, מידע סותר, תיקון נדרש).
+6. **ייצוא PDF מעוצב** — כל מסמכי הפרויקט בקובץ PDF אחד, עם עמוד שער, טיפוגרפיה עברית (Heebo + Frank Ruhl Libre), וטבלאות מעוצבות.
 
-```bash
-python generate.py sample_metadata.json
-python checker.py output/summaries
-```
-
-## שימוש כאפליקציית Web
+## הרצה מקומית
 
 ```bash
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...   # נדרש לפיצ'ר הניתוח עם AI
+export ANTHROPIC_API_KEY=sk-ant-...   # נדרש לפיצ'ר בדיקת העקביות
 python app.py
 ```
 
-פותח שרת Flask מקומי (ברירת מחדל פורט 5000) עם זרימה בת שני שלבים:
+פותח שרת Flask מקומי (ברירת מחדל פורט 5000). מצב הפרויקט (metadata) נשמר בזיכרון השרת
+(לא בקובץ, לא בעוגייה) — מתאים לפריסה של worker יחיד.
 
-1. **טופס מונחה** — הזנת פרטי הפרויקט ותוכן כל אחד ממסמכי SOTAF A–G בשדות נפרדים. בשליחה, המערכת יוצרת את 7 המסמכים ומריצה דוח עקביות בין המסמכים עצמם.
-2. **סקירה + ניתוח AI** — מציג את המסמכים שנוצרו ומאפשר להעלות קבצי פרויקט קיימים (PDF/Word). Claude (`claude-opus-5`) משווה את תוכן הקבצים למסמכי ה-SOTAF, מאתר אי-התאמות עובדתיות וממליץ על תיקון קונקרטי לכל מסמך.
-
-מצב הסשן (metadata + מסמכים) נשמר בזיכרון השרת (לא בקובץ ולא בעוגייה) — מתאים לפריסה של worker יחיד.
+**הערה ל-Windows:** ייצוא ה-PDF (WeasyPrint) דורש ספריות GTK/Pango/Cairo שאינן זמינות כברירת
+מחדל ב-Windows — הפיצ'ר יחזיר שגיאה ידידותית מקומית, ויעבוד כרגיל בפריסה ל-Railway (ראו למטה).
 
 ## פריסה ל-Railway
 
-הפרויקט כולל `Procfile` ו-`railway.json` שמריצים `gunicorn app:app`. יש להגדיר את משתנה הסביבה `ANTHROPIC_API_KEY` בפרויקט ב-Railway (`railway variable set ANTHROPIC_API_KEY --stdin`). לפריסה:
+הפרויקט כולל:
+- `Procfile` / `railway.json` — מריצים `gunicorn app:app`
+- `nixpacks.toml` — מתקין את ספריות המערכת הנדרשות ל-WeasyPrint (`pango`, `cairo`, `gdk-pixbuf`, `fontconfig`)
+
+יש להגדיר את משתנה הסביבה `ANTHROPIC_API_KEY` בפרויקט ב-Railway:
 
 ```bash
+railway variable set ANTHROPIC_API_KEY --stdin --service <service-name>
 railway up
 ```
 
-קבצים חשובים:
-- `templates/` — תבניות A..G למילוי (משמשות גם CLI וגם Web)
-- `templates_web/` — תבניות ה-HTML של ממשק ה-Web (`form.html`, `review.html`, `base.html`)
-- `generate.py` — ממלא תבניות (CLI: כותב ל-`output/`; מיוצא כפונקציה `generate_all` לשימוש ב-`app.py`)
-- `checker.py` — בדיקות עקביות (CLI: קורא מ-`output/summaries`; מיוצא כפונקציה `analyze` לשימוש ב-`app.py`)
-- `extract.py` — חילוץ טקסט מקבצי PDF/DOCX שהועלו
-- `ai_review.py` — קריאה ל-Claude API להשוואת קבצי הפרויקט מול מסמכי ה-SOTAF
-- `app.py` — ממשק Web (Flask) — טופס מונחה, סקירה, והעלאת קבצים לניתוח
+## מבנה הקוד
+
+- `sotaf_schema.py` — **מקור האמת**: הגדרת כל 9 המסמכים, הסעיפים שלהם, וטבלאות הברירת המחדל, כפי שחולצו מהתבניות והמסמכים האמיתיים של הקורס.
+- `project_library.py` — 6 פרויקטי דוגמה אמיתיים מהקורס (תיאור בלבד, לא הקבצים המקוריים).
+- `document_render.py` — ממיר metadata + סכימה למבנה render (טקסט/טבלאות), לשימוש גם בייצוא PDF וגם בבדיקת ה-AI.
+- `extract.py` — חילוץ טקסט מקבצי PDF/DOCX שהועלו.
+- `ai_review.py` — קריאה ל-Claude API להשוואת קבצי הפרויקט מול מסמכי ה-SOTAF, בפורמט טבלת H2 הרשמית.
+- `app.py` — כל ה-routes של ה-Flask app (יצירת פרויקט, hub, עורך מסמך, בדיקת עקביות, ייצוא PDF).
+- `templates_web/` — תבניות ה-HTML (`home`, `library`, `hub`, `doc_editor`, `review`, `pdf_document`, `base`).
+- `static/css/main.css` — מערכת העיצוב של האתר; `static/css/print.css` — עיצוב ה-PDF; `static/fonts/` — Heebo + Frank Ruhl Libre (Google Fonts, רישיון OFL); `static/js/dynform.js` — widget גנרי לטבלאות/קבוצות דינמיות.

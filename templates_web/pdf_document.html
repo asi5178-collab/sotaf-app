@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="static/css/print.css">
+</head>
+<body>
+  <section class="cover">
+    <div class="eyebrow">SOTAF — Socio-Technological Architecture Framework</div>
+    <h1>{{ project_name }}</h1>
+    {% if description %}<div class="desc">{{ description }}</div>{% endif %}
+    <div class="meta">
+      {% if author %}{{ author }}<br>{% endif %}
+      {{ today }}
+    </div>
+  </section>
+
+  {% for doc in documents %}
+    <section class="doc">
+      <div class="doc-header">
+        <div class="letter">מסמך {{ doc.letter }}</div>
+        <h2>{{ doc.title }}</h2>
+        <div class="subtitle">{{ doc.subtitle }}</div>
+      </div>
+
+      {% if doc.sections %}
+        {% for section in doc.sections %}
+          <div class="section">
+            <h3>{{ section.label }}</h3>
+            {% if section.type == "text" %}
+              <p>{{ section.text }}</p>
+            {% else %}
+              <table>
+                <thead><tr>{% for c in section.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+                <tbody>
+                  {% for row in section.rows %}
+                    <tr>{% for c in section.columns %}<td>{{ row.get(c, "") }}</td>{% endfor %}</tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-doc">מסמך זה טרם מולא.</p>
+      {% endif %}
+    </section>
+  {% endfor %}
+</body>
+</html>

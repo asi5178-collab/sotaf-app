@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}SOTAF Studio — ספריית פרויקטים{% endblock %}
+{% block content %}
+  <section class="hero">
+    <span class="eyebrow">השראה</span>
+    <h1>פרויקטים אמיתיים מהקורס</h1>
+    <p class="lead">
+      דוגמאות אמיתיות של אתגרי ניידות קמפוסית שתועדו בשיטת SOTAF בקורסים קודמים. עיינו בהן כדי להבין איך
+      מנסחים אתגר מערכתי, אילו בעלי עניין רלוונטיים, ואילו מסמכים נדרשים לכל סוג פרויקט.
+    </p>
+  </section>
+
+  <div class="grid grid-2">
+    {% for p in projects %}
+      <div class="card lib-card">
+        <h3 style="font-size:1.1rem">{{ p.name }}</h3>
+        <p class="muted" style="font-size:0.82rem; margin-bottom:0.6rem">{{ p.topic }}</p>
+        <p>{{ p.description }}</p>
+        <div class="lib-tags">
+          {% for d in p.docs %}<span class="lib-tag">מסמך {{ d }}</span>{% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section-title"><h2 style="font-size:1.15rem">מוכנים להתחיל?</h2></div>
+  <p>קחו השראה מהדוגמאות למעלה — סוג האתגר, בעלי העניין, השירותים — ובנו את המסמכים של הפרויקט שלכם.</p>
+  <a class="btn btn-primary" href="{{ url_for('home') }}">התחלת פרויקט חדש &larr;</a>
+{% endblock %}
