@@ -37,21 +37,36 @@ def build_documents_context(metadata: dict) -> list[dict]:
 
 
 def sotaf_documents_for_ai(metadata: dict) -> list[dict]:
-    """Flattened plain-text rendering of every non-empty document, for the AI review call."""
+    """Flattened plain-text rendering of every document (including empty ones)
+    for the AI review call. Empty documents/sections must still be included
+    and clearly marked - otherwise the reviewer has no way to flag missing
+    content, since it never sees that the section exists at all."""
     docs = build_documents_context(metadata)
     result = []
     for doc in docs:
+        letter = doc["letter"]
+        all_labels = [s["label"] for s in DOCUMENTS[letter]]
+        filled_labels = {s["label"] for s in doc["sections"]}
+        missing_labels = [label for label in all_labels if label not in filled_labels]
+
         if not doc["sections"]:
-            continue
-        parts = [f"{doc['title']} ({doc['subtitle']})"]
-        for section in doc["sections"]:
-            parts.append(f"## {section['label']}")
-            if section["type"] == "text":
-                parts.append(section["text"])
-            else:
-                for row in section["rows"]:
-                    parts.append(" | ".join(f"{k}: {v}" for k, v in row.items() if (v or "").strip()))
-        result.append({"doc": doc["letter"], "rendered": "\n".join(parts)})
+            parts = [
+                f"{doc['title']} ({doc['subtitle']})",
+                "*** מסמך זה ריק לחלוטין - טרם מולא כלל. ***",
+            ]
+        else:
+            parts = [f"{doc['title']} ({doc['subtitle']})"]
+            for section in doc["sections"]:
+                parts.append(f"## {section['label']}")
+                if section["type"] == "text":
+                    parts.append(section["text"])
+                else:
+                    for row in section["rows"]:
+                        parts.append(" | ".join(f"{k}: {v}" for k, v in row.items() if (v or "").strip()))
+            if missing_labels:
+                parts.append("*** סעיפים שטרם מולאו במסמך זה: " + ", ".join(missing_labels) + " ***")
+
+        result.append({"doc": letter, "rendered": "\n".join(parts)})
     return result
 
 

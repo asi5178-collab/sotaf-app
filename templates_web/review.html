@@ -62,6 +62,15 @@
         </h3>
         {% for f in items %}
           <div class="finding">
+            {% if f.category == "missing_document" %}
+              <span class="lib-tag" style="background:var(--danger-soft); color:var(--danger); border-color:var(--danger)">מסמך חסר</span>
+            {% elif f.category == "missing_content" %}
+              <span class="lib-tag" style="background:var(--warning-soft); color:var(--warning); border-color:var(--warning)">מידע חסר</span>
+            {% elif f.category == "vague_or_generic" %}
+              <span class="lib-tag">נוסח כללי מדי</span>
+            {% else %}
+              <span class="lib-tag" style="background:var(--danger-soft); color:var(--danger); border-color:var(--danger)">סתירה</span>
+            {% endif %}
             <strong>{{ f.section }}</strong>
             <dl>
               <dt>מידע במסמך ה-SOTAF</dt><dd>{{ f.sotaf_info }}</dd>

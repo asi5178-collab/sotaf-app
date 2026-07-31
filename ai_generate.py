@@ -24,9 +24,13 @@ SYSTEM_PROMPT = """\
 לתיעוד אתגרים מערכתיים (בעיקר בתחום הניידות/תחבורה קמפוסית, אך גם תחומים אחרים).
 
 תקבל תיאור קצר של אתגר מערכתי מהמשתמש, וכן את שם מסמך ה-SOTAF הספציפי שנדרש. \
+לעיתים תקבל גם קבצי פרויקט קיימים (מצגות, דוחות, מסמכי דרישות) שהמשתמש כבר העלה. \
 המשימה שלך: לחולל טיוטה מלאה וסבירה של אותו מסמך, על בסיס התיאור, בעברית.
 
 הנחיות:
+- אם סופקו קבצי פרויקט - התוכן שלהם הוא המקור הכי אמין למידע. שאב מהם עובדות, \
+מספרים, שמות ופרטים קונקרטיים במקום להמציא אותם, וודא שהמסמך שתחולל תואם למה \
+שכתוב בהם. השתמש בהנחות סבירות רק למילוי פערים שהקבצים לא מכסים.
 - כתוב תוכן קונקרטי, ספציפי לאתגר שתואר - לא ניסוחים גנריים. אם התיאור חסר פרטים \
 מסוימים, הסק בצורה סבירה מהקשר האתגר (לדוגמה: אם האתגר הוא ניידות קמפוסית, \
 בעלי העניין, השירותים והתרחישים צריכים להתאים לסביבה קמפוסית).
@@ -97,17 +101,29 @@ def _generate_one(client: anthropic.Anthropic, letter: str, user_message: str) -
     return {}
 
 
-def generate_all_documents(description: str, project_name: str, author: str) -> dict:
+def generate_all_documents(
+    description: str, project_name: str, author: str, reference_files: list[dict] | None = None
+) -> dict:
     """Returns a dict shaped like {letter: {section_id: value}}, matching the
     per-document portion of blank_metadata(). One Claude call per document,
     run concurrently, so wall-clock time is roughly the slowest single
-    document instead of the sum of all nine."""
+    document instead of the sum of all nine.
+
+    reference_files: optional [{'filename': ..., 'text': ...}, ...] - existing
+    project material to ground the generated content in, instead of inventing
+    everything from the short description alone.
+    """
     client = anthropic.Anthropic()
     user_message = (
         f"שם הפרויקט/האתגר: {project_name}\n"
         f"צוות: {author}\n\n"
         f"תיאור האתגר המערכתי:\n{description}"
     )
+    if reference_files:
+        files_text = "\n\n".join(
+            f"--- קובץ פרויקט: {f['filename']} ---\n{f['text']}" for f in reference_files
+        )
+        user_message += f"\n\nקבצי פרויקט קיימים שהועלו:\n\n{files_text}"
 
     result: dict = {}
     with ThreadPoolExecutor(max_workers=len(DOC_ORDER)) as executor:

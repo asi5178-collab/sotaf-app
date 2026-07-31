@@ -56,11 +56,19 @@ def create_project():
     metadata["author"] = request.form.get("author", "").strip()
     metadata["description"] = request.form.get("description", "").strip()
 
+    reference_files = []
+    for f in request.files.getlist("reference_files"):
+        if not f or not f.filename:
+            continue
+        text = extract_text(f.filename, f.read())
+        if text:
+            reference_files.append({"filename": f.filename, "text": text})
+
     generate_error = None
-    if metadata["description"]:
+    if metadata["description"] or reference_files:
         try:
             generated = generate_all_documents(
-                metadata["description"], metadata["project_name"], metadata["author"]
+                metadata["description"], metadata["project_name"], metadata["author"], reference_files
             )
             for letter, doc_data in generated.items():
                 if letter in metadata:
