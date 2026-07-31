@@ -86,7 +86,7 @@ def _generate_one(client: anthropic.Anthropic, letter: str, user_message: str) -
         system=SYSTEM_PROMPT,
         tools=[tool],
         tool_choice={"type": "tool", "name": "generate_sotaf_document"},
-        output_config={"effort": "medium"},
+        output_config={"effort": "low"},
         messages=[{"role": "user", "content": f"מסמך מבוקש: {letter}\n\n{user_message}"}],
     ) as stream:
         response = stream.get_final_message()
