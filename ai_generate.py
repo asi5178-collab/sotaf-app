@@ -4,32 +4,27 @@ description, using Claude with structured tool calls built from the real
 SOTAF schema (sotaf_schema.py) — so the output shape matches the app's
 storage format exactly and lands directly in the editable document editor.
 
-Generating all 9 documents in a single call is slow enough to blow past
-reasonable HTTP timeouts, so the work is split into three groups and run
-concurrently; wall-clock time is roughly the slowest single group instead
-of the sum of all nine documents.
+Generating all 9 documents in a single call (or even grouped 3-at-a-time)
+took anywhere from 3 to 5 minutes and had a habit of truncating the later
+documents in a group before it finished. One call per document keeps each
+call's output small and predictable, and all 9 run concurrently so
+wall-clock time is roughly the slowest single document, not the sum.
 """
 from concurrent.futures import ThreadPoolExecutor
 
 import anthropic
 
-from sotaf_schema import DOCUMENTS, DOC_META
+from sotaf_schema import DOCUMENTS, DOC_ORDER, DOC_META
 
 MODEL = "claude-opus-5"
-
-GROUPS = [
-    ["0", "A", "B"],
-    ["C1", "D", "E"],
-    ["F", "G", "H"],
-]
 
 SYSTEM_PROMPT = """\
 אתה עוזר בהכנת ערכת מסמכי SOTAF (Socio-Technological Architecture Framework) \
 מלאה - מתודולוגיה הנדסת מערכות הנלמדת בקורס "מידול מערכות" באוניברסיטת אריאל, \
 לתיעוד אתגרים מערכתיים (בעיקר בתחום הניידות/תחבורה קמפוסית, אך גם תחומים אחרים).
 
-תקבל תיאור קצר של אתגר מערכתי מהמשתמש. המשימה שלך: לחולל טיוטה מלאה וסבירה \
-של קבוצת מסמכי SOTAF שתתבקש, על בסיס התיאור, בעברית.
+תקבל תיאור קצר של אתגר מערכתי מהמשתמש, וכן את שם מסמך ה-SOTAF הספציפי שנדרש. \
+המשימה שלך: לחולל טיוטה מלאה וסבירה של אותו מסמך, על בסיס התיאור, בעברית.
 
 הנחיות:
 - כתוב תוכן קונקרטי, ספציפי לאתגר שתואר - לא ניסוחים גנריים. אם התיאור חסר פרטים \
@@ -42,7 +37,7 @@ Use Cases וכו') - לא להשאיר טבלאות ריקות, אך שמור ע
 - מסמך H (בדיקת רציפות מסמכים), אם מבוקש - במקום למצוא אי-התאמות אמיתיות (שעדיין \
 לא קיימות בטיוטה ראשונית), מלא אותו עם 1-2 שורות לדוגמה שממחישות את סוג הבדיקה \
 שהמסמך אמור לבצע בהמשך הפרויקט, ופסקת תהליך בדיקה כללית.
-- קרא לכלי המבוקש עם כל המסמכים שהתבקשו, מלאים."""
+- קרא לכלי generate_sotaf_document עם המסמך המבוקש, מלא."""
 
 
 def _section_schema(section: dict) -> dict:
@@ -75,41 +70,38 @@ def _doc_schema(letter: str) -> dict:
     }
 
 
-def _build_tool(letters: list[str]) -> dict:
+def _build_tool(letter: str) -> dict:
     return {
-        "name": "generate_sotaf_documents",
-        "description": "Generate full draft content for the requested SOTAF documents based on the user's challenge description.",
-        "input_schema": {
-            "type": "object",
-            "properties": {letter: _doc_schema(letter) for letter in letters},
-            "required": letters,
-        },
+        "name": "generate_sotaf_document",
+        "description": "Generate full draft content for one SOTAF document based on the user's challenge description.",
+        "input_schema": _doc_schema(letter),
     }
 
 
-def _generate_group(client: anthropic.Anthropic, letters: list[str], user_message: str) -> dict:
-    tool = _build_tool(letters)
+def _generate_one(client: anthropic.Anthropic, letter: str, user_message: str) -> dict:
+    tool = _build_tool(letter)
     with client.messages.stream(
         model=MODEL,
-        max_tokens=16000,
+        max_tokens=6000,
         system=SYSTEM_PROMPT,
         tools=[tool],
-        tool_choice={"type": "tool", "name": "generate_sotaf_documents"},
+        tool_choice={"type": "tool", "name": "generate_sotaf_document"},
         output_config={"effort": "medium"},
-        messages=[{"role": "user", "content": user_message}],
+        messages=[{"role": "user", "content": f"מסמך מבוקש: {letter}\n\n{user_message}"}],
     ) as stream:
         response = stream.get_final_message()
 
     for block in response.content:
-        if block.type == "tool_use" and block.name == "generate_sotaf_documents":
-            return block.input
+        if block.type == "tool_use" and block.name == "generate_sotaf_document":
+            return {letter: block.input}
     return {}
 
 
 def generate_all_documents(description: str, project_name: str, author: str) -> dict:
     """Returns a dict shaped like {letter: {section_id: value}}, matching the
-    per-document portion of blank_metadata(). Runs the 3 document groups
-    concurrently so wall-clock time stays well under the slowest single call."""
+    per-document portion of blank_metadata(). One Claude call per document,
+    run concurrently, so wall-clock time is roughly the slowest single
+    document instead of the sum of all nine."""
     client = anthropic.Anthropic()
     user_message = (
         f"שם הפרויקט/האתגר: {project_name}\n"
@@ -118,10 +110,10 @@ def generate_all_documents(description: str, project_name: str, author: str) -> 
     )
 
     result: dict = {}
-    with ThreadPoolExecutor(max_workers=len(GROUPS)) as executor:
+    with ThreadPoolExecutor(max_workers=len(DOC_ORDER)) as executor:
         futures = [
-            executor.submit(_generate_group, client, letters, user_message)
-            for letters in GROUPS
+            executor.submit(_generate_one, client, letter, user_message)
+            for letter in DOC_ORDER
         ]
         for future in futures:
             result.update(future.result())
