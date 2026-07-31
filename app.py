@@ -14,7 +14,7 @@ from flask import Flask, Response, redirect, render_template, request, session, 
 
 from sotaf_schema import DOC_ORDER, DOC_META, DOCUMENTS, blank_metadata, doc_progress
 from project_library import EXAMPLE_PROJECTS
-from document_render import build_documents_context, sotaf_documents_for_ai
+from document_render import build_documents_context, sotaf_documents_for_ai, merge_findings_into_doc_h
 from extract import extract_text
 from ai_review import review as ai_review
 from ai_generate import generate_all_documents
@@ -184,6 +184,7 @@ def review():
         "review.html",
         findings=project.get("findings"),
         analyze_error=project.get("analyze_error"),
+        analyzed_files=project.get("analyzed_files"),
     )
 
 
@@ -195,16 +196,20 @@ def analyze_uploads():
     project = get_project()
 
     uploaded_files = []
+    skipped_files = []
     for f in request.files.getlist("project_files"):
         if not f or not f.filename:
             continue
         text = extract_text(f.filename, f.read())
         if text:
             uploaded_files.append({"filename": f.filename, "text": text})
+        else:
+            skipped_files.append(f.filename)
 
     if not uploaded_files:
         project["analyze_error"] = "לא נמצאו קבצי PDF/Word תקינים בהעלאה."
         project["findings"] = None
+        project["analyzed_files"] = None
         return redirect(url_for("review"))
 
     sotaf_documents = sotaf_documents_for_ai(project["metadata"])
@@ -212,9 +217,15 @@ def analyze_uploads():
     try:
         findings = ai_review(sotaf_documents, uploaded_files)
         project["findings"] = findings
-        project["analyze_error"] = None
+        project["analyzed_files"] = [f["filename"] for f in uploaded_files]
+        project["analyze_error"] = (
+            "לא ניתן היה לקרוא את הקבצים הבאים ולכן הם לא נכללו בניתוח: " + ", ".join(skipped_files)
+            if skipped_files else None
+        )
+        merge_findings_into_doc_h(project["metadata"], findings)
     except Exception as exc:  # noqa: BLE001 - surface any API/config error to the user
         project["findings"] = None
+        project["analyzed_files"] = None
         project["analyze_error"] = f"שגיאה בניתוח: {exc}"
 
     return redirect(url_for("review"))

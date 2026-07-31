@@ -53,3 +53,20 @@ def sotaf_documents_for_ai(metadata: dict) -> list[dict]:
                     parts.append(" | ".join(f"{k}: {v}" for k, v in row.items() if (v or "").strip()))
         result.append({"doc": doc["letter"], "rendered": "\n".join(parts)})
     return result
+
+
+def merge_findings_into_doc_h(metadata: dict, findings: list[dict]) -> None:
+    """Write AI-review findings into Doc H's real 'ממצאי אי-התאמה' table (H2),
+    so a consistency check shows up as an actual, exportable Doc H section
+    instead of only living on the review page."""
+    rows = [
+        {
+            "מסמך הנדסי / סעיף": f"מסמך {f.get('doc', '')} — {f.get('section', '')}",
+            "מידע הנדסי": f.get("sotaf_info", ""),
+            "לא תואם מידע במסמך": f.get("conflicting_info", ""),
+            "מידע הנדסי סותר": "",
+            "תיקון נדרש": f.get("recommendation", ""),
+        }
+        for f in findings
+    ]
+    metadata.setdefault("H", {})["findings"] = rows

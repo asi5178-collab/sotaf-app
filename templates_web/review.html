@@ -5,35 +5,71 @@
     <span class="eyebrow">מסמך H — בדיקת רציפות מסמכים</span>
     <h1>בדיקת עקביות בין מסמכי הפרויקט</h1>
     <p class="lead">
-      העלו קבצי פרויקט קיימים (PDF / Word) — מצגות, דוחות, מסמכי דרישות. Claude ישווה את תוכנם למסמכי ה-SOTAF
-      שמילאתם, ויאתר אי-התאמות בדיוק כפי שמסמך H הרשמי דורש: מידע סותר בין מסמכים, נתונים חסרים, וניסוחים לא תואמים.
+      העלו את כל קבצי הפרויקט הרלוונטיים (PDF / Word — אפשר לבחור כמה קבצים יחד). Claude יבחן את כולם ביחד
+      מול מסמכי ה-SOTAF שמילאתם, ויאתר אי-התאמות בדיוק כפי שמסמך H הרשמי דורש: מידע סותר בין מסמכים, נתונים
+      חסרים, וניסוחים לא תואמים. הממצאים נשמרים גם בתוך מסמך H עצמו ומופיעים בייצוא ה-PDF המלא.
     </p>
     <a class="btn btn-ghost btn-sm" href="{{ url_for('hub') }}">&rarr; חזרה לפרויקט</a>
   </section>
 
-  <form method="post" action="{{ url_for('analyze_uploads') }}" enctype="multipart/form-data">
-    <div class="card upload-row">
-      <input type="file" name="project_files" accept=".pdf,.docx" multiple required>
-      <button type="submit" class="btn btn-primary">הרץ בדיקת עקביות</button>
+  <form method="post" action="{{ url_for('analyze_uploads') }}" enctype="multipart/form-data" id="analyze-form">
+    <div class="card">
+      <div class="upload-row">
+        <input type="file" name="project_files" id="project_files" accept=".pdf,.docx" multiple required>
+        <button type="submit" class="btn btn-primary">הרץ בדיקת עקביות</button>
+      </div>
+      <p class="field-hint" id="file-count-hint">ניתן לבחור כמה קבצים יחד (Ctrl/Cmd+קליק, או גרירה של כמה קבצים).</p>
+      <ul id="file-list" style="margin:0.4rem 0 0; padding-inline-start:1.2rem; font-size:0.85rem; color:var(--ink-soft)"></ul>
     </div>
   </form>
+  <script>
+    const filesInput = document.getElementById("project_files");
+    const fileList = document.getElementById("file-list");
+    const hint = document.getElementById("file-count-hint");
+    filesInput.addEventListener("change", () => {
+      fileList.innerHTML = "";
+      const files = Array.from(filesInput.files);
+      hint.textContent = files.length ? `${files.length} קבצים נבחרו:` : "ניתן לבחור כמה קבצים יחד (Ctrl/Cmd+קליק, או גרירה של כמה קבצים).";
+      files.forEach((f) => {
+        const li = document.createElement("li");
+        li.textContent = f.name;
+        fileList.appendChild(li);
+      });
+    });
+  </script>
 
   {% if analyze_error %}
     <div class="alert alert-danger" style="margin-top:1.2rem">{{ analyze_error }}</div>
   {% endif %}
 
   {% if findings is not none %}
-    <div class="section-title"><h2 style="font-size:1.1rem">ממצאי מסמך H</h2></div>
+    {% if analyzed_files %}
+      <p class="field-hint" style="margin-top:1.2rem">
+        נותחו {{ analyzed_files|length }} קבצים: {{ analyzed_files|join(", ") }}
+      </p>
+    {% endif %}
+
+    <div class="section-title">
+      <h2 style="font-size:1.1rem">ממצאי מסמך H</h2>
+      {% if findings %}<span class="progress-label">{{ findings|length }} ממצאים</span>{% endif %}
+    </div>
+
     {% if findings %}
-      {% for f in findings %}
-        <div class="finding">
-          <span class="doc-badge">מסמך {{ f.doc }}</span><strong>{{ f.section }}</strong>
-          <dl>
-            <dt>מידע במסמך ה-SOTAF</dt><dd>{{ f.sotaf_info }}</dd>
-            <dt>מידע סותר / חסר בקבצים שהועלו</dt><dd>{{ f.conflicting_info }}</dd>
-            <dt>תיקון נדרש</dt><dd>{{ f.recommendation }}</dd>
-          </dl>
-        </div>
+      {% for doc, items in findings|groupby('doc') %}
+        <h3 style="font-size:0.95rem; margin-top:1.4rem">
+          <span class="doc-badge">מסמך {{ doc }}</span>
+          <span class="muted" style="font-weight:normal; font-size:0.82rem">{{ items|length }} ממצאים</span>
+        </h3>
+        {% for f in items %}
+          <div class="finding">
+            <strong>{{ f.section }}</strong>
+            <dl>
+              <dt>מידע במסמך ה-SOTAF</dt><dd>{{ f.sotaf_info }}</dd>
+              <dt>מידע סותר / חסר בקבצים שהועלו</dt><dd>{{ f.conflicting_info }}</dd>
+              <dt>תיקון נדרש</dt><dd>{{ f.recommendation }}</dd>
+            </dl>
+          </div>
+        {% endfor %}
       {% endfor %}
     {% else %}
       <div class="alert alert-ok">לא נמצאו אי-התאמות בין הקבצים שהועלו לבין מסמכי הפרויקט.</div>
