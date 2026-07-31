@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Reference library of real past SOTAF projects from the course, for
-inspiration when describing a new system. Descriptions only — not the
-original files (those live outside the repo, on the course owner's disk)."""
+inspiration when describing a new system. Full real document text lives in
+project_library_content.py (LIBRARY_CONTENT), extracted from the actual
+course submission files with the owner's permission to share."""
 
 EXAMPLE_PROJECTS = [
     {

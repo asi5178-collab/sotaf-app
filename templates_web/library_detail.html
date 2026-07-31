@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} — ספריית פרויקטים — SOTAF Studio{% endblock %}
+{% block content %}
+  <section class="hero" style="padding-top:2.2rem; padding-bottom:1rem">
+    <span class="eyebrow">{{ project.topic }}</span>
+    <h1>{{ project.name }}</h1>
+    <p class="lead">{{ project.description }}</p>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('library') }}">&rarr; חזרה לספרייה</a>
+  </section>
+
+  {% if not documents %}
+    <div class="alert alert-warn">לא נמצא תוכן מלא לפרויקט זה כרגע.</div>
+  {% endif %}
+
+  {% for d in documents %}
+    <details class="doc-section" style="padding:0" {% if loop.first %}open{% endif %}>
+      <summary style="padding:1.3rem 1.5rem; display:flex; align-items:center; gap:0.6rem">
+        <span class="doc-badge">מסמך {{ d.letter }}</span>
+        <span>{{ d.title }}</span>
+        <span class="muted" style="font-weight:normal; font-size:0.82rem">{{ d.subtitle }}</span>
+      </summary>
+      <div style="padding:0 1.5rem 1.3rem">
+        <p class="field-hint">מקור: {{ d.source_filename }}</p>
+        <pre style="white-space:pre-wrap; direction:rtl; text-align:right; font-family:inherit; font-size:0.92rem; line-height:1.7">{{ d.text }}</pre>
+      </div>
+    </details>
+  {% endfor %}
+
+  {% if usecases %}
+    <details class="doc-section" style="padding:0">
+      <summary style="padding:1.3rem 1.5rem; display:flex; align-items:center; gap:0.6rem">
+        <span class="doc-badge">Use Cases</span>
+        <span>טבלת מקרי שימוש</span>
+      </summary>
+      <div style="padding:0 1.5rem 1.3rem">
+        <p class="field-hint">מקור: {{ usecases.source_filename }}</p>
+        <pre style="white-space:pre-wrap; direction:rtl; text-align:right; font-family:inherit; font-size:0.92rem; line-height:1.7">{{ usecases.text }}</pre>
+      </div>
+    </details>
+  {% endif %}
+
+  <div class="section-title"><h2 style="font-size:1.15rem">רוצים להתחיל פרויקט משלכם?</h2></div>
+  <a class="btn btn-primary" href="{{ url_for('home') }}">התחלת פרויקט חדש &larr;</a>
+{% endblock %}

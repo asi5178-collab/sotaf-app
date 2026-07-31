@@ -14,6 +14,7 @@ from flask import Flask, Response, redirect, render_template, request, session, 
 
 from sotaf_schema import DOC_ORDER, DOC_META, DOCUMENTS, blank_metadata, doc_progress
 from project_library import EXAMPLE_PROJECTS
+from project_library_content import LIBRARY_CONTENT
 from document_render import build_documents_context, sotaf_documents_for_ai, merge_findings_into_doc_h
 from extract import extract_text
 from ai_review import review as ai_review, review_standalone
@@ -90,6 +91,34 @@ def create_project():
 @app.route("/library")
 def library():
     return render_template("library.html", projects=EXAMPLE_PROJECTS)
+
+
+@app.route("/library/<project_id>")
+def library_detail(project_id):
+    project = next((p for p in EXAMPLE_PROJECTS if p["id"] == project_id), None)
+    if not project:
+        return redirect(url_for("library"))
+
+    content = LIBRARY_CONTENT.get(project_id, {})
+    documents = []
+    for letter in DOC_ORDER:
+        if letter in content:
+            documents.append({
+                "letter": letter,
+                "title": DOC_META[letter]["title"],
+                "subtitle": DOC_META[letter]["subtitle"],
+                "source_filename": content[letter]["source_filename"],
+                "text": content[letter]["text"],
+            })
+
+    usecases = content.get("usecases")
+
+    return render_template(
+        "library_detail.html",
+        project=project,
+        documents=documents,
+        usecases=usecases,
+    )
 
 
 @app.route("/check-project", methods=["GET", "POST"])
