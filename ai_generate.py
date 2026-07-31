@@ -91,7 +91,7 @@ def _generate_group(client: anthropic.Anthropic, letters: list[str], user_messag
     tool = _build_tool(letters)
     with client.messages.stream(
         model=MODEL,
-        max_tokens=8000,
+        max_tokens=16000,
         system=SYSTEM_PROMPT,
         tools=[tool],
         tool_choice={"type": "tool", "name": "generate_sotaf_documents"},
