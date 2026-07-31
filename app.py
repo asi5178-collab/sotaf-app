@@ -16,7 +16,7 @@ from sotaf_schema import DOC_ORDER, DOC_META, DOCUMENTS, blank_metadata, doc_pro
 from project_library import EXAMPLE_PROJECTS
 from document_render import build_documents_context, sotaf_documents_for_ai, merge_findings_into_doc_h
 from extract import extract_text
-from ai_review import review as ai_review
+from ai_review import review as ai_review, review_standalone
 from ai_generate import generate_all_documents
 
 app = Flask(__name__, template_folder="templates_web")
@@ -90,6 +90,61 @@ def create_project():
 @app.route("/library")
 def library():
     return render_template("library.html", projects=EXAMPLE_PROJECTS)
+
+
+@app.route("/check-project", methods=["GET", "POST"])
+def check_project():
+    if request.method == "GET":
+        return render_template("check_project.html")
+
+    project_name = request.form.get("project_name", "").strip() or "פרויקט קיים לבדיקה"
+
+    uploaded_files = []
+    skipped_files = []
+    for f in request.files.getlist("project_files"):
+        if not f or not f.filename:
+            continue
+        text = extract_text(f.filename, f.read())
+        if text:
+            uploaded_files.append({"filename": f.filename, "text": text})
+        else:
+            skipped_files.append(f.filename)
+
+    if not uploaded_files:
+        return render_template(
+            "check_project.html",
+            error="לא נמצאו קבצי PDF/Word תקינים בהעלאה.",
+        )
+
+    metadata = blank_metadata()
+    metadata["project_name"] = project_name
+    metadata["author"] = request.form.get("author", "").strip()
+
+    pid = str(uuid.uuid4())
+    project = {
+        "metadata": metadata,
+        "findings": None,
+        "analyze_error": None,
+        "analyzed_files": None,
+        "generate_error": None,
+    }
+    PROJECTS[pid] = project
+    session["pid"] = pid
+
+    try:
+        findings = review_standalone(uploaded_files)
+        project["findings"] = findings
+        project["analyzed_files"] = [f["filename"] for f in uploaded_files]
+        project["analyze_error"] = (
+            "לא ניתן היה לקרוא את הקבצים הבאים ולכן הם לא נכללו בניתוח: " + ", ".join(skipped_files)
+            if skipped_files else None
+        )
+        merge_findings_into_doc_h(metadata, findings)
+    except Exception as exc:  # noqa: BLE001 - surface any API/config error to the user
+        project["findings"] = None
+        project["analyze_error"] = f"שגיאה בניתוח: {exc}"
+
+    return redirect(url_for("review"))
 
 
 @app.route("/hub")

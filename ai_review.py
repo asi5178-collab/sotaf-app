@@ -98,14 +98,61 @@ SYSTEM_PROMPT = """\
 - קרא ל-report_findings עם כל הממצאים, בפורמט הזהה לטבלת H2 הרשמית."""
 
 
+STANDALONE_SYSTEM_PROMPT = """\
+אתה עוזר בביצוע בדיקת רציפות מסמכים (מסמך H) בשיטת SOTAF, עבור פרויקט קיים שלא \
+נבנה דרך המערכת הזו - תקבל אך ורק קבצי פרויקט שהועלו (מצגות, דוחות, מסמכי Word/PDF), \
+ללא מסמכי SOTAF "רשמיים" נפרדים להשוואה. הקבצים יחד מהווים את כלל תיעוד הפרויקט.
+
+תפקיד ה-SOTAF כולל בדרך כלל את הנושאים הבאים בתשעה מסמכים: 0 (הגדרת האתגר/חזון), \
+A (תפיסת מערכת - בעלי עניין, שירותים, מבנה, ממשקים), B (טכנולוגיות), C1 (דרישות \
+קישוריות/ממשקים בין מערכות), D (תפיסת הפעלה - תרחישים, Use Cases), E (תפיסה עסקית - \
+מודל, הכנסות, עלויות), F (תפיסה ניהולית - מבנה ארגוני), G (תמריצים ומשחוק), H (בדיקת \
+רציפות).
+
+המשימה שלך: לבחון את הקבצים שהועלו זה מול זה ולדווח, לכל ממצא, את המסמך ה-SOTAF \
+הרלוונטי ביותר לנושא (בשדה doc), עם category מתאים:
+
+1. **contradiction** - שני קבצים (או שני מקומות באותו קובץ) נותנים מידע שונה/סותר \
+לאותה עובדה (מספרים, תאריכים, תיאורים).
+2. **missing_document** - נושא מרכזי שאמור להיות מכוסה באחד מתשעת המסמכים (למשל \
+מודל עסקי, תפיסה ניהולית, תמריצים) לא מופיע כלל בשום קובץ שהועלה.
+3. **missing_content** - נושא מכוסה בחלקו אך חסר לו פרט מהותי (למשל בעלי עניין בלי \
+תיאור אינטרסים, ממשקים בלי פירוט ערוץ הנתונים).
+4. **vague_or_generic** - התוכן הקיים כללי מדי וחסר נתונים כמותיים/ספציפיים.
+
+הנחיות:
+- עבור שיטתית על כל אחד מתשעת נושאי המסמכים מול כלל הקבצים שהועלו.
+- ציין בכל ממצא באילו קבצים (שמות) נמצא המידע הרלוונטי.
+- דיווח על רשימה ריקה הוא חריג נדיר, לא ברירת מחדל - סביר שיהיו ממצאים כלשהם, \
+במיוחד היכן שמסמכי SOTAF שלמים חסרים מכלל הקבצים.
+- קרא ל-report_findings עם כל הממצאים, בפורמט הזהה לטבלת H2 הרשמית."""
+
+
+def _run_review(system_prompt: str, user_message: str) -> list[dict]:
+    client = anthropic.Anthropic()
+    with client.messages.stream(
+        model=MODEL,
+        max_tokens=8000,
+        system=system_prompt,
+        tools=[REPORT_TOOL],
+        tool_choice={"type": "tool", "name": "report_findings"},
+        output_config={"effort": "high"},
+        messages=[{"role": "user", "content": user_message}],
+    ) as stream:
+        response = stream.get_final_message()
+
+    for block in response.content:
+        if block.type == "tool_use" and block.name == "report_findings":
+            return block.input.get("findings", [])
+    return []
+
+
 def review(sotaf_documents: list[dict], uploaded_files: list[dict]) -> list[dict]:
     """sotaf_documents: [{'doc': 'A', 'rendered': '...'}, ...] — includes ALL
     documents, even empty ones, explicitly marked as such.
     uploaded_files: [{'filename': '...', 'text': '...'}, ...]
     Returns a list of finding dicts shaped like Doc H rows.
     """
-    client = anthropic.Anthropic()
-
     docs_text = "\n\n".join(
         f"--- מסמך {d['doc']} ---\n{d['rendered']}" for d in sotaf_documents
     )
@@ -118,19 +165,22 @@ def review(sotaf_documents: list[dict], uploaded_files: list[dict]) -> list[dict
         f"קבצי הפרויקט שהועלו ({len(uploaded_files)} קבצים):\n\n{files_text}\n\n"
         "עבור שיטתית על כל מסמך מול כל קובץ ודווח באמצעות report_findings, בפורמט טבלת H2."
     )
+    return _run_review(SYSTEM_PROMPT, user_message)
 
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=8000,
-        system=SYSTEM_PROMPT,
-        tools=[REPORT_TOOL],
-        tool_choice={"type": "tool", "name": "report_findings"},
-        output_config={"effort": "high"},
-        messages=[{"role": "user", "content": user_message}],
-    ) as stream:
-        response = stream.get_final_message()
 
-    for block in response.content:
-        if block.type == "tool_use" and block.name == "report_findings":
-            return block.input.get("findings", [])
-    return []
+def review_standalone(uploaded_files: list[dict]) -> list[dict]:
+    """Like review(), but for a project with no separately-filled SOTAF
+    metadata - the uploaded files ARE the project's documentation, and
+    findings are cross-referenced among them plus checked against the
+    expected SOTAF document topics.
+    uploaded_files: [{'filename': '...', 'text': '...'}, ...]
+    """
+    files_text = "\n\n".join(
+        f"--- קובץ שהועלה: {f['filename']} ---\n{f['text']}" for f in uploaded_files
+    )
+    user_message = (
+        f"קבצי הפרויקט שהועלו ({len(uploaded_files)} קבצים):\n\n{files_text}\n\n"
+        "עבור שיטתית על תשעת נושאי המסמכים מול כלל הקבצים ודווח באמצעות report_findings, "
+        "בפורמט טבלת H2."
+    )
+    return _run_review(STANDALONE_SYSTEM_PROMPT, user_message)

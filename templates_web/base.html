@@ -16,6 +16,7 @@
       <nav class="navlinks">
         <a href="{{ url_for('home') }}">פרויקט חדש</a>
         <a href="{{ url_for('library') }}">ספריית פרויקטים</a>
+        <a href="{{ url_for('check_project') }}">בדיקת פרויקט קיים</a>
         {% if has_project %}<a href="{{ url_for('hub') }}">הפרויקט שלי</a>{% endif %}
       </nav>
     </div>

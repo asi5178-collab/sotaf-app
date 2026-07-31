@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}בדיקת פרויקט קיים — SOTAF Studio{% endblock %}
+{% block content %}
+  <section class="hero">
+    <span class="eyebrow">בדיקת עקביות לפרויקט קיים</span>
+    <h1>יש לכם כבר מסמכי פרויקט? בדקו את העקביות ביניהם</h1>
+    <p class="lead">
+      אם כבר יש בידיכם מסמכי SOTAF שלמים או חלקיים — של הפרויקט שלכם או של פרויקט אחר — העלו אותם כאן.
+      Claude יבחן את הקבצים אלה מול אלה, יאתר סתירות בין מסמכים, ויציין אם נושאים מרכזיים (בעלי עניין,
+      טכנולוגיות, מודל עסקי וכו') חסרים לגמרי מהתיעוד — בלי צורך ליצור פרויקט חדש או להזין תיאור.
+    </p>
+  </section>
+
+  <div class="card" style="max-width:600px">
+    <form method="post" action="{{ url_for('check_project') }}" enctype="multipart/form-data" id="check-form">
+      <label for="project_name">שם הפרויקט (לא חובה)</label>
+      <input type="text" id="project_name" name="project_name" placeholder="למשל: פרויקט צוות אחר לבדיקה">
+
+      <label for="author">שם/שמות הצוות (לא חובה)</label>
+      <input type="text" id="author" name="author" placeholder="שם מלא">
+
+      <label for="project_files">מסמכי הפרויקט</label>
+      <input type="file" id="project_files" name="project_files" accept=".pdf,.docx" multiple required>
+      <p class="field-hint" id="file-count-hint">PDF / Word — אפשר להעלות כמה מסמכים יחד (0, A-H, מצגות, דוחות וכו').</p>
+      <ul id="file-list" style="margin:0.2rem 0 0; padding-inline-start:1.2rem; font-size:0.85rem; color:var(--ink-soft)"></ul>
+
+      {% if error %}<div class="alert alert-danger" style="margin-top:1rem">{{ error }}</div>{% endif %}
+
+      <div class="row" style="margin-top:1.4rem">
+        <button type="submit" class="btn btn-primary" id="check-btn">בדוק עקביות</button>
+      </div>
+      <p class="field-hint" id="loading-hint" style="display:none; margin-top:0.8rem">
+        &#8987; בודקים עקביות בין המסמכים... זה עשוי לקחת דקה-שתיים, נא לא לסגור את הדף.
+      </p>
+    </form>
+  </div>
+  <script>
+    const filesInput = document.getElementById("project_files");
+    const fileList = document.getElementById("file-list");
+    const hint = document.getElementById("file-count-hint");
+    filesInput.addEventListener("change", () => {
+      fileList.innerHTML = "";
+      const files = Array.from(filesInput.files);
+      hint.textContent = files.length ? `${files.length} קבצים נבחרו:` : "PDF / Word — אפשר להעלות כמה מסמכים יחד (0, A-H, מצגות, דוחות וכו').";
+      files.forEach((f) => {
+        const li = document.createElement("li");
+        li.textContent = f.name;
+        fileList.appendChild(li);
+      });
+    });
+    document.getElementById("check-form").addEventListener("submit", function () {
+      document.getElementById("check-btn").disabled = true;
+      document.getElementById("check-btn").textContent = "בודק עקביות...";
+      document.getElementById("loading-hint").style.display = "block";
+    });
+  </script>
+{% endblock %}
