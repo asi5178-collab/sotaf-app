@@ -3,31 +3,42 @@
 {% block content %}
   <section class="hero">
     <span class="eyebrow">SOTAF — Socio-Technological Architecture Framework</span>
-    <h1>תארו את המערכת שלכם, ותנו ל-SOTAF Studio לבנות עבורכם את כל ערכת המסמכים</h1>
+    <h1>תארו את האתגר שלכם — וקבלו טיוטה מלאה של כל 9 מסמכי ה-SOTAF</h1>
     <p class="lead">
-      כלי אינטראקטיבי להכנת מסמכי SOTAF (0, A–H) לפי המתודולוגיה שנלמדת בקורס. תארו את האתגר המערכתי שלכם,
-      השראו מפרויקטים קודמים, ומלאו כל מסמך בממשק מובנה — עם ייצוא ל-PDF מעוצב ובדיקת עקביות אוטומטית בין המסמכים.
+      אין צורך בגישה למסמכים או פרויקטים קודמים. תארו בכמה משפטים את האתגר המערכתי, ו-Claude יחולל עבורכם
+      טיוטה ראשונית לכל מסמכי ה-SOTAF (0, A–H) — כולל טבלאות בעלי עניין, שירותים, תרחישים וכו'. את הטיוטה
+      אפשר לערוך ולדייק בהמשך בממשק מובנה לכל מסמך.
     </p>
   </section>
 
   <div class="grid grid-2">
     <div class="card">
       <h2 style="font-size:1.15rem">התחלת פרויקט חדש</h2>
-      <form method="post" action="{{ url_for('create_project') }}">
+      <form method="post" action="{{ url_for('create_project') }}" id="create-form">
         <label for="project_name">שם הפרויקט / האתגר המערכתי</label>
         <input type="text" id="project_name" name="project_name" placeholder="למשל: הרחבת נסיעות שיתופיות בקמפוס" required>
 
         <label for="author">שם/שמות הצוות</label>
         <input type="text" id="author" name="author" placeholder="שם מלא">
 
-        <label for="description">תארו בכמה משפטים את האתגר או המערכת</label>
-        <textarea id="description" name="description" placeholder="מהו האתגר המערכתי? מי המשתמשים? מה הבעיה שרוצים לפתור?"></textarea>
-        <p class="field-hint">אפשר להרחיב על כל היבט בהמשך, בתוך כל אחד ממסמכי ה-SOTAF.</p>
+        <label for="description">תארו את האתגר המערכתי</label>
+        <textarea id="description" name="description" rows="6" placeholder="מהו האתגר? מי המשתמשים והבעיה שלהם? מה השירות/המערכת החדשה שרוצים להקים? מהו היקף ההפעלה (מי, איפה, מתי)? ככל שתתארו יותר, הטיוטה שתתקבל תהיה מדויקת יותר."></textarea>
+        <p class="field-hint">המערכת תחולל טיוטה מלאה לכל 9 המסמכים על סמך התיאור — ותאפשר לערוך כל פרט בהמשך.</p>
 
         <div class="row" style="margin-top:1.4rem">
-          <button type="submit" class="btn btn-primary">התחל לבנות את מסמכי הפרויקט</button>
+          <button type="submit" class="btn btn-primary" id="create-btn">חוללו לי את מסמכי הפרויקט</button>
         </div>
+        <p class="field-hint" id="loading-hint" style="display:none; margin-top:0.8rem">
+          &#8987; מחוללים טיוטה לכל 9 המסמכים... זה עשוי לקחת כדקה.
+        </p>
       </form>
+      <script>
+        document.getElementById("create-form").addEventListener("submit", function () {
+          document.getElementById("create-btn").disabled = true;
+          document.getElementById("create-btn").textContent = "מחולל מסמכים...";
+          document.getElementById("loading-hint").style.display = "block";
+        });
+      </script>
     </div>
 
     <div class="card">

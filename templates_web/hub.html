@@ -12,6 +12,10 @@
     </div>
   </section>
 
+  {% if generate_error %}
+    <div class="alert alert-warn" style="margin-bottom:1.2rem">{{ generate_error }}</div>
+  {% endif %}
+
   <div class="section-title"><h2 style="font-size:1.15rem">מסמכי SOTAF</h2></div>
   <div class="grid grid-3">
     {% for d in docs %}

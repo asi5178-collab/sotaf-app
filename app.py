@@ -17,6 +17,7 @@ from project_library import EXAMPLE_PROJECTS
 from document_render import build_documents_context, sotaf_documents_for_ai
 from extract import extract_text
 from ai_review import review as ai_review
+from ai_generate import generate_all_documents
 
 app = Flask(__name__, template_folder="templates_web")
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
@@ -55,8 +56,25 @@ def create_project():
     metadata["author"] = request.form.get("author", "").strip()
     metadata["description"] = request.form.get("description", "").strip()
 
+    generate_error = None
+    if metadata["description"]:
+        try:
+            generated = generate_all_documents(
+                metadata["description"], metadata["project_name"], metadata["author"]
+            )
+            for letter, doc_data in generated.items():
+                if letter in metadata:
+                    metadata[letter].update(doc_data)
+        except Exception as exc:  # noqa: BLE001 - fall back to a blank project rather than fail
+            generate_error = f"יצירה אוטומטית נכשלה, נפתח פרויקט ריק למילוי ידני: {exc}"
+
     pid = str(uuid.uuid4())
-    PROJECTS[pid] = {"metadata": metadata, "findings": None, "analyze_error": None}
+    PROJECTS[pid] = {
+        "metadata": metadata,
+        "findings": None,
+        "analyze_error": None,
+        "generate_error": generate_error,
+    }
     session["pid"] = pid
     return redirect(url_for("hub"))
 
@@ -91,6 +109,7 @@ def hub():
         project_name=metadata.get("project_name", ""),
         description=metadata.get("description", ""),
         docs=docs,
+        generate_error=project.get("generate_error"),
     )
 
 
