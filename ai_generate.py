@@ -92,6 +92,7 @@ def generate_all_documents(description: str, project_name: str, author: str) -> 
         system=SYSTEM_PROMPT,
         tools=[tool],
         tool_choice={"type": "tool", "name": "generate_sotaf_documents"},
+        output_config={"effort": "medium"},
         messages=[{"role": "user", "content": user_message}],
     ) as stream:
         response = stream.get_final_message()
